@@ -1,6 +1,6 @@
 const functions = require('firebase-functions');
-/*const admin = require('firebase-admin');
-admin.initializeApp(functions.config().firebase);*/
+const admin = require('firebase-admin');
+admin.initializeApp(functions.config().firebase);
 
 const axios = require('axios');
 const BASE_URL  = "http://10.201.239.73:18346/ipg/";
@@ -28,6 +28,25 @@ exports.payment = functions.https.onCall( function(payload, context){
         })
         .then(function (response) {
             console.log(response.data);
+            //TODO: Check the response to see if the request was successful before sending the notification
+            var tokenRef = admin.database.ref('consumers/'+uid+'fcmToken');
+            tokenRef.once('value', function(snapshot){
+                var instanceId = snapshot.val();
+                const message = {
+                    notification:{
+                        title: "Payment Confirmed",
+                        body: "We confirm that we received " + payload.amount +
+                                " from "+ payload.msisdn
+                    }
+                };
+                admin.messaging().sendToDevice(instanceId, message)
+                    .then(function () {
+                        return response.data;
+                    })
+                    .catch(function (error) {
+                        return error.data;
+                    });
+            });
             return response.data;
         })
         .catch(function(error){
