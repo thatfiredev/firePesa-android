@@ -61,3 +61,7 @@ fastlane/Preview.html
 fastlane/screenshots
 fastlane/test_output
 fastlane/readme.md
+
+# Cloud Functions node_modules
+functions/node_modules
+functions/etc
