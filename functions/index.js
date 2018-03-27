@@ -74,6 +74,25 @@ exports.refund = functions.https.onCall( function(payload, context){
         })
         .then(function (response) {
             console.log(response.data);
+            //TODO: Check the response to see if the request was successful before sending the notification
+            var tokenRef = admin.database.ref('consumers/'+uid+'fcmToken');
+            tokenRef.once('value', function(snapshot){
+                var instanceId = snapshot.val();
+                const message = {
+                    notification:{
+                        title: "Refund Confirmed",
+                        body: "We have refunded " + payload.amount +
+                        " to "+ payload.msisdn
+                    }
+                };
+                admin.messaging().sendToDevice(instanceId, message)
+                    .then(function () {
+                        return response.data;
+                    })
+                    .catch(function (error) {
+                        return error.data;
+                    });
+            });
             return response.data;
         })
         .catch(function(error){
