@@ -6,6 +6,9 @@ const axios = require('axios');
 const BASE_URL  = "http://10.201.239.73:18346/ipg/";
 const config = functions.config().mpesa;
 
+const constants = require("constants");
+const crypto = require("crypto");
+
 exports.payment = functions.https.onCall( function(payload, context){
     var uid = context.auth.uid;
     axios.post(BASE_URL + "c2bpayment/",
@@ -18,9 +21,9 @@ exports.payment = functions.https.onCall( function(payload, context){
         },
         {
             headers:{
-                'Content-Type': ' application/json',
+                'Content-Type': 'application/json',
                 'Content-Length': 5,
-                'Authorization':bearer
+                'Authorization': 'Bearer '+getBearerToken()
             }
         })
         .then(function (response) {
@@ -45,9 +48,9 @@ exports.refund = functions.https.onCall( function(payload, context){
         },
         {
             headers:{
-                'Content-Type': ' application/json',
+                'Content-Type': 'application/json',
                 'Content-Length': 5,
-                'Authorization':bearer
+                'Authorization': 'Bearer '+getBearerToken()
             }
         })
         .then(function (response) {
@@ -71,8 +74,8 @@ exports.query = functions.https.onCall( function(payload, context){
         },
         {
             headers:{
-                'Content-Type': ' application/json',
-                'Authorization':bearer
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer '+getBearerToken()
             }
         })
         .then(function (response) {
@@ -85,3 +88,16 @@ exports.query = functions.https.onCall( function(payload, context){
         });
 
 });
+
+exports.testBear = functions.https.onRequest(function (req, resp) {
+    var token = getBearerToken();
+    resp.status(200).send(token);
+});
+
+function getBearerToken()
+{
+    var publicKey = config.publickey;
+    var buffer = new Buffer(config.apikey);
+    var encrypted = crypto.publicEncrypt({"key" : publicKey, padding : constants.RSA_PKCS1_PADDING}, buffer);
+    return encrypted.toString("base64");
+}
