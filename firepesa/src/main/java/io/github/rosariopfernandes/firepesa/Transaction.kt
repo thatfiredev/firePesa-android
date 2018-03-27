@@ -4,9 +4,6 @@ import com.google.android.gms.tasks.Task
 import com.google.firebase.functions.FirebaseFunctions
 import com.google.firebase.functions.HttpsCallableResult
 
-/**
- * Created by rosariopfernandes on 3/26/18.
- */
 class Transaction {
     val functions = FirebaseFunctions.getInstance()
 
