@@ -34,9 +34,9 @@ exports.payment = functions.https.onCall( function(payload, context){
                 var instanceId = snapshot.val();
                 const message = {
                     notification:{
-                        title: "Payment Confirmed",
-                        body: "We confirm that we received " + payload.amount +
-                                " from "+ payload.msisdn
+                        title: payload.fcmTitle ? payload.fcmTitle : "Payment Confirmed",
+                        body: payload.fcmBody ? payload.fcmBody : ("We confirm that we received "
+                            + payload.amount + " from "+ payload.msisdn)
                     }
                 };
                 admin.messaging().sendToDevice(instanceId, message)
@@ -80,9 +80,9 @@ exports.refund = functions.https.onCall( function(payload, context){
                 var instanceId = snapshot.val();
                 const message = {
                     notification:{
-                        title: "Refund Confirmed",
-                        body: "We have refunded " + payload.amount +
-                        " to "+ payload.msisdn
+                        title: payload.fcmTitle ? payload.fcmTitle : "Refund Confirmed",
+                        body: payload.fcmBody ? payload.fcmBody : ("We have refunded " +
+                            payload.amount + " to "+ payload.msisdn)
                     }
                 };
                 admin.messaging().sendToDevice(instanceId, message)
