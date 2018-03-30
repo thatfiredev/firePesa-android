@@ -3,14 +3,12 @@ package io.github.rosariopfernandes.firepesasampleapp
 import android.os.Bundle
 import android.support.design.widget.Snackbar
 import android.support.v7.app.AppCompatActivity
-import android.util.Log
 import android.view.Menu
 import android.view.MenuItem
-import com.google.android.gms.tasks.Continuation
 import io.github.rosariopfernandes.firepesa.Transaction
-
+import io.github.rosariopfernandes.firepesa.ktx.catch
+import io.github.rosariopfernandes.firepesa.ktx.then
 import kotlinx.android.synthetic.main.activity_main.*
-import kotlinx.android.synthetic.main.content_main.*
 
 class MainActivity : AppCompatActivity() {
 
@@ -24,10 +22,16 @@ class MainActivity : AppCompatActivity() {
                     .setAction("Action", null).show()
         }
 
-        Transaction().query("12345")?.continueWith {
-            task ->
-            textView.setText(task.result.data as String)
-        }
+        Transaction()
+                .query("12345")
+                .then {
+                    task->
+                    //handle the response
+                }
+                .catch {
+                    e ->
+                    e.printStackTrace()
+                }
     }
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
