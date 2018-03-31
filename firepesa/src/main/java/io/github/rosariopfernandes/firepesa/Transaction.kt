@@ -49,7 +49,8 @@ class Transaction {
         payload.put("amount", "$amount")
         payload.put("transactionReference", reference)
         payload.put("thirdPartyReference", thirdPartyReference)
-        return functions.getHttpsCallable("testPayment")
+        //TODO: Remove the test suffix when working on a real scenario
+        return functions.getHttpsCallable("paymentTest")
                 .call(payload)
     }
 
@@ -62,7 +63,8 @@ class Transaction {
     fun refund(transactionId:String, amount:Float): Task<HttpsCallableResult> {
         payload.put("transactionID", transactionId)
         payload.put("amount", "$amount")
-        return functions.getHttpsCallable("refund")
+        //TODO: Remove the test suffix when working on a real scenario
+        return functions.getHttpsCallable("refundTest")
                 .call(payload)
     }
 

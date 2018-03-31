@@ -1,13 +1,13 @@
-const functions = require('firebase-functions');
-const admin = require('firebase-admin');
-admin.initializeApp(functions.config().firebase);
-
 const axios = require('axios');
-const BASE_URL  = "http://10.201.239.73:18346/ipg/";
-const config = functions.config().mpesa;
-
 const constants = require("constants");
 const crypto = require("crypto");
+const functions = require('firebase-functions');
+const admin = require('firebase-admin');
+
+admin.initializeApp(functions.config().firebase);
+const config = functions.config().mpesa;
+
+const BASE_URL  = "http://10.201.239.73:18346/ipg/"; //TODO: Load the baseUrl from config
 
 exports.payment = functions.https.onCall( function(payload, context){
     var uid = context.auth.uid;
@@ -28,26 +28,24 @@ exports.payment = functions.https.onCall( function(payload, context){
         })
         .then(function (response) {
             console.log(response.data);
-            //TODO: Check the response to see if the request was successful before sending the notification
-            var tokenRef = admin.database.ref('consumers/'+uid+'fcmToken');
-            tokenRef.once('value', function(snapshot){
-                var instanceId = snapshot.val();
-                const message = {
-                    notification:{
-                        title: payload.fcmTitle ? payload.fcmTitle : "Payment Confirmed",
-                        body: payload.fcmBody ? payload.fcmBody : ("We confirm that we received "
-                            + payload.amount + " from "+ payload.msisdn)
-                    }
-                };
-                admin.messaging().sendToDevice(instanceId, message)
-                    .then(function () {
-                        return response.data;
-                    })
-                    .catch(function (error) {
-                        return error.data;
-                    });
-            });
-            return response.data;
+            var instanceId = context.instanceIdToken;
+            const message = {
+                notification:{
+                    title: payload.fcmTitle ? payload.fcmTitle : "Payment Confirmed",
+                    body: payload.fcmBody ? payload.fcmBody : ("We've received "
+                        + payload.amount + "MZN from "+ payload.msisdn)
+                }
+            };
+            admin.messaging().sendToDevice(instanceId, message)
+                .then(function () {
+                    console.log("Message Sent");
+                    return response.data;
+                    //return response.data;
+                })
+                .catch(function (error) {
+                    console.log(error);
+                    return error.data;
+                });
         })
         .catch(function(error){
             console.log(error.data);
@@ -74,26 +72,21 @@ exports.refund = functions.https.onCall( function(payload, context){
         })
         .then(function (response) {
             console.log(response.data);
-            //TODO: Check the response to see if the request was successful before sending the notification
-            var tokenRef = admin.database.ref('consumers/'+uid+'fcmToken');
-            tokenRef.once('value', function(snapshot){
-                var instanceId = snapshot.val();
-                const message = {
-                    notification:{
-                        title: payload.fcmTitle ? payload.fcmTitle : "Refund Confirmed",
-                        body: payload.fcmBody ? payload.fcmBody : ("We have refunded " +
-                            payload.amount + " to "+ payload.msisdn)
-                    }
-                };
-                admin.messaging().sendToDevice(instanceId, message)
-                    .then(function () {
-                        return response.data;
-                    })
-                    .catch(function (error) {
-                        return error.data;
-                    });
-            });
-            return response.data;
+            var instanceId = context.instanceIdToken;
+            const message = {
+                notification:{
+                    title: payload.fcmTitle ? payload.fcmTitle : "Refund Confirmed",
+                    body: payload.fcmBody ? payload.fcmBody : ("We have refunded " +
+                        payload.amount + "MZN to "+ payload.msisdn)
+                }
+            };
+            admin.messaging().sendToDevice(instanceId, message)
+                .then(function () {
+                    return response.data;
+                })
+                .catch(function (error) {
+                    return error.data;
+                });
         })
         .catch(function(error){
             console.log(error.data);
@@ -124,12 +117,60 @@ exports.query = functions.https.onCall( function(payload, context){
             console.log(error.data);
             return error.data;
         });
-
 });
 
 exports.testBear = functions.https.onRequest(function (req, resp) {
     var token = getBearerToken();
+    console.log(token);
     resp.status(200).send(token);
+});
+
+exports.paymentTest = functions.https.onCall(function (payload, context){
+    var uid = context.auth.uid;
+    console.log(payload);
+    var instanceId = context.instanceIdToken;
+    const message = {
+        notification:{
+            title: payload.fcmTitle ? payload.fcmTitle : "Payment Confirmed",
+            body: payload.fcmBody ? payload.fcmBody : ("We've received "
+                + payload.amount + "MZN from "+ payload.msisdn)
+        }
+    };
+    admin.messaging().sendToDevice(instanceId, message).then(function () {
+        return {
+            output_responseCode:'INS-0',
+            output_ResponseDesc:'Request processed successfully',
+            output_TransactionID:'5C2300CVWN',
+            output_ConversationID:'5a993e2977f9a66c027bfa68',
+            output_ResponseTransactionStatus:'Paid'
+        };
+    }).catch(function (error) {
+        console.log(error.data);
+    });
+});
+
+exports.refundTest = functions.https.onCall(function (payload, context){
+    var uid = context.auth.uid;
+    console.log(payload);
+    var instanceId = context.instanceIdToken;
+    const message = {
+        notification:{
+            title: payload.fcmTitle ? payload.fcmTitle : "Refund Confirmed",
+            body: payload.fcmBody ? payload.fcmBody : ("We have refunded " +
+                payload.amount + "MZN to "+ payload.msisdn)
+        }
+    };
+    admin.messaging().sendToDevice(instanceId, message).then(function () {
+        return {
+            output_responseCode:'INS-0',
+            output_ResponseDesc:'Request processed successfully',
+            output_TransactionID:'5C2300CVWN',
+            output_ConversationID:'5a993e2977f9a66c027bfa68',
+            output_ResponseTransactionStatus:'Refunded'
+        };
+    }).catch(function (error) {
+        console.log(error.data);
+    });
 });
 
 function getBearerToken()
