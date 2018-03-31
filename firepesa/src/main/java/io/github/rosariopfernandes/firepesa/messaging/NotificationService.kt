@@ -30,6 +30,7 @@ import android.support.v4.content.ContextCompat
 import android.util.Log
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
+import io.github.rosariopfernandes.firepesa.R
 
 /**
  * NotificationService class
@@ -52,7 +53,7 @@ class NotificationService:FirebaseMessagingService() {
      */
     private fun displayNotification(message:RemoteMessage.Notification){
         val mBuilder = NotificationCompat.Builder(this, "default")
-                .setSmallIcon(android.R.drawable.ic_menu_call)
+                .setSmallIcon(R.drawable.ic_payment_black_24dp)
                 .setContentTitle(message.title)
                 .setContentText(message.body)
                 .setAutoCancel(true)
@@ -70,6 +71,6 @@ class NotificationService:FirebaseMessagingService() {
         if(color>0)
             mBuilder.color = ContextCompat.getColor(this, color)
         val notificationManager = NotificationManagerCompat.from(this)
-        notificationManager.notify(12345, mBuilder.build())
+        notificationManager.notify(25884, mBuilder.build())
     }
 }
