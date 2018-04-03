@@ -21,16 +21,13 @@
  *OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  *SOFTWARE.
  */
-package io.github.rosariopfernandes.firepesa
+package io.github.rosariopfernandes.firepesa.transactions
 
 /**
- * Response from a Transaction
- * @author Rosário Pereira Fernandes
+ * Payment Transaction to be saved on the Database
  */
-data class TransactionResponse(var code:String, var description:String, var transactionId:String,
-                               var conversationId:String, var transactionStatus:String,
-                               var isSuccessful:Boolean)
+data class Payment (val msisdn:String, val amount:String, val reference:String,
+                    val thirdPartyReference:String)
 {
-    constructor() : this("","","","",
-            "", true)
+    constructor() : this("","","","")
 }

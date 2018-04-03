@@ -24,8 +24,12 @@
 package io.github.rosariopfernandes.firepesa
 
 import com.google.android.gms.tasks.Task
+import com.google.firebase.database.DatabaseReference
+import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.functions.FirebaseFunctions
 import com.google.firebase.functions.HttpsCallableResult
+import io.github.rosariopfernandes.firepesa.transactions.Payment
+import io.github.rosariopfernandes.firepesa.transactions.Reversal
 
 /**
  * mPesa API Transaction
@@ -33,6 +37,8 @@ import com.google.firebase.functions.HttpsCallableResult
  */
 class Transaction {
     val functions = FirebaseFunctions.getInstance()
+    val transactionsRef = FirebaseDatabase.getInstance()
+            .getReference("firePesa/transactions")
     private val payload : HashMap<String, Any> = HashMap()
 
     /**
@@ -41,31 +47,36 @@ class Transaction {
      * @param amount Amount being charged (currency:MZN)
      * @param reference
      * @param thirdPartyReference
-     * @return Task<HttpsCallableResult> from the Cloud Functions SDK
+     * @return DatabaseReference of the new payment's result
      */
     fun payment(msisdn:String, amount:Float, reference:String,
-                thirdPartyReference:String): Task<HttpsCallableResult> {
-        payload.put("msisdn", "+258$msisdn")
-        payload.put("amount", "$amount")
-        payload.put("transactionReference", reference)
-        payload.put("thirdPartyReference", thirdPartyReference)
+                thirdPartyReference:String): DatabaseReference {
+        val paymentsRef = transactionsRef.child("payments")
+        val payment = Payment("+258$msisdn", "$amount", reference,
+                thirdPartyReference)
+        val paymentKey = paymentsRef.push().key
+        paymentsRef.child(paymentKey).setValue(payment)
         //TODO: Remove the test suffix when working on a real scenario
-        return functions.getHttpsCallable("paymentTest")
-                .call(payload)
+        return paymentsRef.child("results").child(paymentKey)
     }
 
     /**
      * Initiates a reversal (refund) Transaction on the mPesa API
      * @param transactionId ID of the transaction to be reversed
      * @param amount Amount being returned (currency:MZN)
-     * @return Task<HttpsCallableResult> from the Cloud Functions SDK
+     * @return DatabaseReference of the refund's result
      */
-    fun refund(transactionId:String, amount:Float): Task<HttpsCallableResult> {
-        payload.put("transactionID", transactionId)
+    fun refund(transactionId:String, amount:Float): DatabaseReference {
+        /*payload.put("transactionID", transactionId)
         payload.put("amount", "$amount")
         //TODO: Remove the test suffix when working on a real scenario
         return functions.getHttpsCallable("refundTest")
-                .call(payload)
+                .call(payload)*/
+        val reversalsRef = transactionsRef.child("reversals")
+        val reversal = Reversal(transactionId, amount)
+        val reversalKey = reversalsRef.push().key
+        reversalsRef.child(reversalKey).setValue(reversal)
+        return transactionsRef.child("results").child(reversalKey)
     }
 
     /**

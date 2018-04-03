@@ -21,16 +21,11 @@
  *OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  *SOFTWARE.
  */
-package io.github.rosariopfernandes.firepesa
+package io.github.rosariopfernandes.firepesa.transactions
 
 /**
- * Response from a Transaction
- * @author Rosário Pereira Fernandes
+ * Reversal Transaction on the Database
  */
-data class TransactionResponse(var code:String, var description:String, var transactionId:String,
-                               var conversationId:String, var transactionStatus:String,
-                               var isSuccessful:Boolean)
-{
-    constructor() : this("","","","",
-            "", true)
+data class Reversal(val transactionId:String, val amount:Float){
+    constructor():this("",0f)
 }

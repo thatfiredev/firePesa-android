@@ -23,45 +23,32 @@
  */
 package io.github.rosariopfernandes.firepesa.ktx
 
-import com.google.android.gms.tasks.Task
-import com.google.firebase.functions.HttpsCallableResult
+import com.google.firebase.database.DataSnapshot
+import com.google.firebase.database.DatabaseError
+import com.google.firebase.database.DatabaseReference
+import com.google.firebase.database.ValueEventListener
 import io.github.rosariopfernandes.firepesa.TransactionResponse
-import java.lang.Exception
 
 /**
- * This method will be called when the server replies to
- * the sent Transaction
+ * This method will be called when the mPesa API
+ * replies to the state of the sent Transaction
  * @param response Response from the server
  * @return Task<HttpsCallableResult> from the Cloud Functions SDK
  */
-inline fun Task<HttpsCallableResult>.then(crossinline action:
-       (response:TransactionResponse)->Unit):
-        Task<HttpsCallableResult> {
-    continueWith({
-        task ->
-        val map = task.result.data as HashMap<String, String>
-        val response= TransactionResponse(
-                map["output_ResponseCode"]!!,
-                map["output_ResponseDesc"]!!,
-                map["output_TransactionID"]!!,
-                map["output_ConversationID"]!!,
-                map["output_ResponseTransactionStatus"]!!,
-                true
-        )
-        action(response)
-    })
-    return this
-}
-
-/**
- * This method will be called if an Exception was thrown on the server-side
- * @param error Exception caught
- */
-inline fun Task<HttpsCallableResult>.catch(crossinline action:
-       (error:Exception)->Unit){
-    addOnCompleteListener({
-        task ->
-        if(!task.isSuccessful)
-            action(task.exception!!)
+inline fun DatabaseReference
+        .then(crossinline action:(response: TransactionResponse)->Unit)
+{
+    addValueEventListener(object:ValueEventListener{
+        override fun onDataChange(dataSnapshot: DataSnapshot) {
+            action(dataSnapshot.getValue(TransactionResponse::class.java)!!)
+        }
+        override fun onCancelled(error: DatabaseError) {
+            val transactionResponse = TransactionResponse()
+            transactionResponse.code = "${error.code}"
+            transactionResponse.description = error.details
+            transactionResponse.transactionStatus = error.message
+            transactionResponse.isSuccessful = false
+            action(transactionResponse)
+        }
     })
 }
