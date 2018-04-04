@@ -23,7 +23,10 @@
  */
 package io.github.rosariopfernandes.firepesa
 
+import android.content.Context
+import android.os.Bundle
 import com.google.android.gms.tasks.Task
+import com.google.firebase.analytics.FirebaseAnalytics
 import com.google.firebase.database.DatabaseReference
 import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.functions.FirebaseFunctions
@@ -35,11 +38,13 @@ import io.github.rosariopfernandes.firepesa.transactions.Reversal
  * mPesa API Transaction
  * @author Rosário Pereira Fernandes
  */
-class Transaction {
+abstract class Transaction(context: Context) {
     val functions = FirebaseFunctions.getInstance()
+    val analytics:FirebaseAnalytics = FirebaseAnalytics.getInstance(context)
     val transactionsRef = FirebaseDatabase.getInstance()
             .getReference("firePesa/transactions")
-    private val payload : HashMap<String, Any> = HashMap()
+    private var payload : HashMap<String, Any> = HashMap()
+    private var bundle = Bundle()
 
     /**
      * Initiates a payment Transaction on the mPesa API
@@ -56,6 +61,10 @@ class Transaction {
                 thirdPartyReference)
         val paymentKey = paymentsRef.push().key
         paymentsRef.child(paymentKey).setValue(payment)
+        bundle = Bundle()
+        bundle.putString(FirebaseAnalytics.Param.VALUE, "$amount")
+        bundle.putString(FirebaseAnalytics.Param.CURRENCY, "MZN")
+        analytics.logEvent(FirebaseAnalytics.Event.ECOMMERCE_PURCHASE, bundle)
         //TODO: Remove the test suffix when working on a real scenario
         return paymentsRef.child("results").child(paymentKey)
     }
@@ -76,6 +85,11 @@ class Transaction {
         val reversal = Reversal(transactionId, amount)
         val reversalKey = reversalsRef.push().key
         reversalsRef.child(reversalKey).setValue(reversal)
+        bundle = Bundle()
+        bundle.putString(FirebaseAnalytics.Param.VALUE, "$amount")
+        bundle.putString(FirebaseAnalytics.Param.CURRENCY, "MZN")
+        bundle.putString(FirebaseAnalytics.Param.TRANSACTION_ID, transactionId)
+        analytics.logEvent(FirebaseAnalytics.Event.PURCHASE_REFUND, bundle)
         return transactionsRef.child("results").child(reversalKey)
     }
 
