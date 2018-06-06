@@ -27,8 +27,11 @@ import android.content.Context
 import android.os.Bundle
 import com.google.android.gms.tasks.Task
 import com.google.firebase.analytics.FirebaseAnalytics
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.FirebaseAuthRecentLoginRequiredException
 import com.google.firebase.database.DatabaseReference
 import com.google.firebase.database.FirebaseDatabase
+import com.google.firebase.database.ServerValue
 import com.google.firebase.functions.FirebaseFunctions
 import com.google.firebase.functions.HttpsCallableResult
 import io.github.rosariopfernandes.firepesa.transactions.Payment
@@ -38,7 +41,7 @@ import io.github.rosariopfernandes.firepesa.transactions.Reversal
  * mPesa API Transaction
  * @author Rosário Pereira Fernandes
  */
-abstract class Transaction(context: Context) {
+class Transaction(context: Context) {
     val functions = FirebaseFunctions.getInstance()
     val analytics:FirebaseAnalytics = FirebaseAnalytics.getInstance(context)
     val transactionsRef = FirebaseDatabase.getInstance()
@@ -56,17 +59,24 @@ abstract class Transaction(context: Context) {
      */
     fun payment(msisdn:String, amount:Float, reference:String,
                 thirdPartyReference:String): DatabaseReference {
-        val paymentsRef = transactionsRef.child("payments")
-        val payment = Payment("+258$msisdn", "$amount", reference,
-                thirdPartyReference)
-        val paymentKey = paymentsRef.push().key
-        paymentsRef.child(paymentKey).setValue(payment)
-        bundle = Bundle()
-        bundle.putString(FirebaseAnalytics.Param.VALUE, "$amount")
-        bundle.putString(FirebaseAnalytics.Param.CURRENCY, "MZN")
-        analytics.logEvent(FirebaseAnalytics.Event.ECOMMERCE_PURCHASE, bundle)
-        //TODO: Remove the test suffix when working on a real scenario
-        return paymentsRef.child("results").child(paymentKey)
+        val user = FirebaseAuth.getInstance().currentUser
+        if(user == null)
+            throw FirebaseAuthRecentLoginRequiredException("ERROR_USER_NOT_FOUND",
+                        "Please sign in before starting a payment")
+        else{
+            val paymentsRef = transactionsRef.child("payments")
+            val payment = Payment("+258$msisdn", "$amount", reference,
+                    thirdPartyReference, user.uid, 0)
+            val paymentKey = paymentsRef.push().key
+            paymentsRef.child(paymentKey).setValue(payment)
+            paymentsRef.child(paymentKey).child("timestamp")
+                    .setValue(ServerValue.TIMESTAMP)
+            bundle = Bundle()
+            bundle.putString(FirebaseAnalytics.Param.VALUE, "$amount")
+            bundle.putString(FirebaseAnalytics.Param.CURRENCY, "MZN")
+            analytics.logEvent(FirebaseAnalytics.Event.ECOMMERCE_PURCHASE, bundle)
+            return transactionsRef.child("results").child(paymentKey)
+        }
     }
 
     /**
@@ -76,21 +86,25 @@ abstract class Transaction(context: Context) {
      * @return DatabaseReference of the refund's result
      */
     fun refund(transactionId:String, amount:Float): DatabaseReference {
-        /*payload.put("transactionID", transactionId)
-        payload.put("amount", "$amount")
-        //TODO: Remove the test suffix when working on a real scenario
-        return functions.getHttpsCallable("refundTest")
-                .call(payload)*/
-        val reversalsRef = transactionsRef.child("reversals")
-        val reversal = Reversal(transactionId, amount)
-        val reversalKey = reversalsRef.push().key
-        reversalsRef.child(reversalKey).setValue(reversal)
-        bundle = Bundle()
-        bundle.putString(FirebaseAnalytics.Param.VALUE, "$amount")
-        bundle.putString(FirebaseAnalytics.Param.CURRENCY, "MZN")
-        bundle.putString(FirebaseAnalytics.Param.TRANSACTION_ID, transactionId)
-        analytics.logEvent(FirebaseAnalytics.Event.PURCHASE_REFUND, bundle)
-        return transactionsRef.child("results").child(reversalKey)
+        val user = FirebaseAuth.getInstance().currentUser
+        if(user == null)
+            throw FirebaseAuthRecentLoginRequiredException("ERROR_USER_NOT_FOUND",
+                    "Please sign in before ordering a refund")
+        else{
+            val reversalsRef = transactionsRef.child("reversals")
+            val reversal = Reversal(transactionId, amount,
+                    FirebaseAuth.getInstance().currentUser!!.uid, 0)
+            val reversalKey = reversalsRef.push().key
+            reversalsRef.child(reversalKey).setValue(reversal)
+            reversalsRef.child(reversalKey).child("timestamp")
+                    .setValue(ServerValue.TIMESTAMP)
+            bundle = Bundle()
+            bundle.putString(FirebaseAnalytics.Param.VALUE, "$amount")
+            bundle.putString(FirebaseAnalytics.Param.CURRENCY, "MZN")
+            bundle.putString(FirebaseAnalytics.Param.TRANSACTION_ID, transactionId)
+            analytics.logEvent(FirebaseAnalytics.Event.PURCHASE_REFUND, bundle)
+            return transactionsRef.child("results").child(reversalKey)
+        }
     }
 
     /**
