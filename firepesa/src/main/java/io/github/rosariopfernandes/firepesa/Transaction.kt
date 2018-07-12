@@ -42,11 +42,9 @@ import io.github.rosariopfernandes.firepesa.transactions.Reversal
  * @author Rosário Pereira Fernandes
  */
 class Transaction(context: Context) {
-    val functions = FirebaseFunctions.getInstance()
-    val analytics:FirebaseAnalytics = FirebaseAnalytics.getInstance(context)
-    val transactionsRef = FirebaseDatabase.getInstance()
+    private val analytics = FirebaseAnalytics.getInstance(context)
+    private val transactionsRef = FirebaseDatabase.getInstance()
             .getReference("firePesa/transactions")
-    private var payload : HashMap<String, Any> = HashMap()
     private var bundle = Bundle()
 
     /**
@@ -57,17 +55,17 @@ class Transaction(context: Context) {
      * @param thirdPartyReference
      * @return DatabaseReference of the new payment's result
      */
-    fun payment(msisdn:String, amount:Float, reference:String,
-                thirdPartyReference:String): DatabaseReference {
+    fun payment(msisdn: String, amount: Float, reference: String,
+                thirdPartyReference: String): DatabaseReference {
         val user = FirebaseAuth.getInstance().currentUser
-        if(user == null)
+        if (user == null) {
             throw FirebaseAuthRecentLoginRequiredException("ERROR_USER_NOT_FOUND",
-                        "Please sign in before starting a payment")
-        else{
+                    "Please sign in before starting a payment")
+        } else {
             val paymentsRef = transactionsRef.child("payments")
             val payment = Payment("+258$msisdn", "$amount", reference,
                     thirdPartyReference, user.uid, 0)
-            val paymentKey = paymentsRef.push().key
+            val paymentKey = paymentsRef.push().key!!
             paymentsRef.child(paymentKey).setValue(payment)
             paymentsRef.child(paymentKey).child("timestamp")
                     .setValue(ServerValue.TIMESTAMP)
@@ -85,16 +83,16 @@ class Transaction(context: Context) {
      * @param amount Amount being returned (currency:MZN)
      * @return DatabaseReference of the refund's result
      */
-    fun refund(transactionId:String, amount:Float): DatabaseReference {
+    fun refund(transactionId: String, amount: Float): DatabaseReference {
         val user = FirebaseAuth.getInstance().currentUser
-        if(user == null)
+        if(user == null) {
             throw FirebaseAuthRecentLoginRequiredException("ERROR_USER_NOT_FOUND",
                     "Please sign in before ordering a refund")
-        else{
+        } else {
             val reversalsRef = transactionsRef.child("reversals")
             val reversal = Reversal(transactionId, amount,
                     FirebaseAuth.getInstance().currentUser!!.uid, 0)
-            val reversalKey = reversalsRef.push().key
+            val reversalKey = reversalsRef.push().key!!
             reversalsRef.child(reversalKey).setValue(reversal)
             reversalsRef.child(reversalKey).child("timestamp")
                     .setValue(ServerValue.TIMESTAMP)
@@ -105,26 +103,5 @@ class Transaction(context: Context) {
             analytics.logEvent(FirebaseAnalytics.Event.PURCHASE_REFUND, bundle)
             return transactionsRef.child("results").child(reversalKey)
         }
-    }
-
-    /**
-     * Initiates a Query Transaction on the mPesa API
-     * @param queryReference
-     * @return Task<HttpsCallableResult> from the Cloud Functions SDK
-     */
-    fun query(queryReference:String): Task<HttpsCallableResult> {
-        payload.put("input_QueryReference", queryReference)
-        return functions.getHttpsCallable("query")
-                .call(payload)
-    }
-
-    /**
-     * Replaces the default Notification with a custom one
-     * @param title Custom notification title
-     * @param body Custom notification body(content)
-     */
-    fun addNotification(title:String, body:String){
-        payload.put("fcmTitle", title)
-        payload.put("fcmBody", body)
     }
 }

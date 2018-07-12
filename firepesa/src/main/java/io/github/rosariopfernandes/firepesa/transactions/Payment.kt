@@ -26,8 +26,13 @@ package io.github.rosariopfernandes.firepesa.transactions
 /**
  * Payment Transaction to be saved on the Database
  */
-data class Payment (val msisdn:String, val amount:String, val reference:String,
-                    val thirdPartyReference:String)
-{
-    constructor() : this("","","","")
+data class Payment (
+    val msisdn: String,
+    val amount: String,
+    val reference: String,
+    val thirdPartyReference: String,
+    var uid: String,
+    val timestamp: Long
+) {
+    constructor(): this("", "", "", "", "", 0)
 }

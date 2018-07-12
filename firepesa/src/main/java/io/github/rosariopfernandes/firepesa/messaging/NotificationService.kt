@@ -28,6 +28,8 @@ import android.support.v4.app.NotificationCompat
 import android.support.v4.app.NotificationManagerCompat
 import android.support.v4.content.ContextCompat
 import android.util.Log
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
 import io.github.rosariopfernandes.firepesa.R
@@ -36,7 +38,7 @@ import io.github.rosariopfernandes.firepesa.R
  * NotificationService class
  * @author Rosário Pereira Fernandes
  */
-class NotificationService:FirebaseMessagingService() {
+class NotificationService : FirebaseMessagingService() {
 
     /**
      * This method will be called when a new Notification arrives from FCM.
@@ -44,8 +46,24 @@ class NotificationService:FirebaseMessagingService() {
      */
     override fun onMessageReceived(message: RemoteMessage) {
         super.onMessageReceived(message)
-        message.notification?.let { displayNotification(it) }
+        message.notification?.let {
+            displayNotification(it)
+        }
         Log.d("NotificationService", "New Notification arrived")
+    }
+
+    /**
+     * This method will be called when the FCM device token changes
+     */
+    override fun onNewToken(token: String) {
+        val user = FirebaseAuth.getInstance().currentUser
+
+        user?.let {
+            FirebaseDatabase.getInstance().getReference("firePesa/consumers")
+                    .child(it.uid).child("tokens/android")
+                    .setValue(token)
+        }
+        Log.i("InstanceIdService", "FCM Token Refreshed")
     }
 
     /**
@@ -66,10 +84,12 @@ class NotificationService:FirebaseMessagingService() {
                 bundle.getInt("com.google.firebase.messaging.default_notification_icon")
         val color =
                 bundle.getInt("com.google.firebase.messaging.default_notification_color")
-        if(smallIcon>0)
+        if(smallIcon>0) {
             mBuilder.setSmallIcon(smallIcon)
-        if(color>0)
+        }
+        if(color>0) {
             mBuilder.color = ContextCompat.getColor(this, color)
+        }
         val notificationManager = NotificationManagerCompat.from(this)
         notificationManager.notify(25884, mBuilder.build())
     }

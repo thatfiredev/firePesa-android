@@ -26,6 +26,11 @@ package io.github.rosariopfernandes.firepesa.transactions
 /**
  * Reversal Transaction on the Database
  */
-data class Reversal(val transactionId:String, val amount:Float){
-    constructor():this("",0f)
+data class Reversal(
+    val transactionId: String,
+    val amount: Float,
+    val uid: String,
+    val timestamp: Long
+) {
+    constructor(): this("", 0f, "", 0)
 }

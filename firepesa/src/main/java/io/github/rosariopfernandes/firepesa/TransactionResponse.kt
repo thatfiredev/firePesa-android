@@ -27,10 +27,14 @@ package io.github.rosariopfernandes.firepesa
  * Response from a Transaction
  * @author Rosário Pereira Fernandes
  */
-data class TransactionResponse(var code:String, var description:String, var transactionId:String,
-                               var conversationId:String, var transactionStatus:String,
-                               var isSuccessful:Boolean)
-{
+data class TransactionResponse(
+    var code:String,
+    var description:String,
+    var transactionId:String,
+    var conversationId:String,
+    var transactionStatus:String,
+    var isSuccessful:Boolean
+) {
     constructor() : this("","","","",
             "", true)
 }

@@ -35,12 +35,13 @@ import io.github.rosariopfernandes.firepesa.TransactionResponse
  * @param response Response from the server
  * @return Task<HttpsCallableResult> from the Cloud Functions SDK
  */
-inline fun DatabaseReference
-        .then(crossinline action:(response: TransactionResponse)->Unit)
-{
+inline fun DatabaseReference.then(
+        crossinline action:(response: TransactionResponse?) -> Unit
+) {
     addValueEventListener(object:ValueEventListener{
         override fun onDataChange(dataSnapshot: DataSnapshot) {
-            action(dataSnapshot.getValue(TransactionResponse::class.java)!!)
+            action(dataSnapshot.getValue(TransactionResponse::class.java))
+            //TODO: Test with uid and add timestamp
         }
         override fun onCancelled(error: DatabaseError) {
             val transactionResponse = TransactionResponse()
